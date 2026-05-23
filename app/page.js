@@ -242,12 +242,26 @@ export default function Home() {
       </div>
 
       {/* About */}
-      <div className="home-about">
-        <h2 className="home-about-title">Built for the self-employed</h2>
-        <p className="home-about-text">
-          Freelancers and solo business owners face financial decisions that standard calculators don't cover — self-employment tax, utilization rates, project margins, payment processor fees. SoloNumbers builds the specific tools you actually need, explains the math clearly, and gets out of your way.
-        </p>
-      </div>
+        <div className="home-about">
+          <div className="home-about-eyebrow">Why SoloNumbers exists</div>
+          <p className="home-about-text">
+            A lot of talented people know their work inside and out, but nobody ever
+            taught them how to price that work as a business. That is where
+            freelancers, consultants, and independent professionals can get hurt.
+          </p>
+          <p className="home-about-text">
+            They take an old salary, divide it by a standard work year, pick a number
+            that feels fair, and hope it works. Hope is nice. It is not a pricing
+            strategy.
+          </p>
+          <p className="home-about-text">
+            SoloNumbers was built to help people think through the real math behind
+            freelance and consulting rates — including taxes, unpaid time, benefits,
+            business expenses, and realistic billable hours. Because great work still
+            needs good math.
+          </p>
+          <Link href="/about" className="home-about-link">Read the full story →</Link>
+        </div>
 
       <p className="disclaimer">
         All calculators provide estimates for planning purposes only. Consult a qualified tax or financial professional for advice specific to your situation.
