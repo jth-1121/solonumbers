@@ -45,7 +45,7 @@ const categories = [
         slug: 'self-employment-tax',
         name: 'Self-Employment Tax Estimator',
         desc: 'Estimate your quarterly SE tax payments so you are never caught short.',
-        live: false,
+        live: true,
       },
       {
         slug: 'quarterly-tax-estimator',

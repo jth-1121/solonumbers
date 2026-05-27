@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 
 // ── Tax year configuration — update annually ──────────────────────────────
@@ -33,16 +33,16 @@ const SE_TAX_THRESHOLD = 400; // IRS: SE tax applies when net earnings >= $400
 
 // ── Presets ───────────────────────────────────────────────────────────────
 const PRESETS = {
-  sideIncome: { income: 15000,  expenses: 1000,  label: 'Side income'         },
-  partTime:   { income: 35000,  expenses: 3000,  label: 'Part-time freelance'  },
-  fullTime:   { income: 75000,  expenses: 8000,  label: 'Full-time freelance'  },
-  highEarner: { income: 150000, expenses: 15000, label: 'High earner'          },
+  sideIncome: { income: '15000',  expenses: '1000',  label: 'Side income'         },
+  partTime:   { income: '35000',  expenses: '3000',  label: 'Part-time freelance'  },
+  fullTime:   { income: '75000',  expenses: '8000',  label: 'Full-time freelance'  },
+  highEarner: { income: '150000', expenses: '15000', label: 'High earner'          },
 };
 
 export default function SETaxEstimator() {
   const [taxYear,       setTaxYear]       = useState(2026);
-  const [grossIncome,   setGrossIncome]   = useState(75000);
-  const [expenses,      setExpenses]      = useState(8000);
+  const [grossIncome,   setGrossIncome]   = useState('75000');
+  const [expenses,      setExpenses]      = useState('8000');
   const [w2Wages,       setW2Wages]       = useState('');
   const [advOpen,       setAdvOpen]       = useState(false);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
@@ -51,27 +51,36 @@ export default function SETaxEstimator() {
 
   const config = TAX_CONFIG[taxYear];
 
-  // ── Core calculation ──────────────────────────────────────────────────────
-  const netIncome          = Math.max(0, grossIncome - expenses);
-  const netEarnings        = netIncome * SE_ADJUSTMENT;
-  const w2Num              = parseFloat(w2Wages) || 0;
-  const remainingSS        = Math.max(0, config.ssWageBase - w2Num);
-  const earningsForSS      = Math.min(netEarnings, remainingSS);
-  const expensesOverIncome = expenses > grossIncome;
-  const belowThreshold     = netEarnings > 0 && netEarnings < SE_TAX_THRESHOLD;
+  // ── Core calculation (memoized — only recalculates when inputs change) ────
+  const calc = useMemo(() => {
+    const grossNum = parseFloat(grossIncome) || 0;
+    const expNum   = parseFloat(expenses)    || 0;
+    const w2Num    = parseFloat(w2Wages)     || 0;
 
-  // If below IRS threshold, SE tax is $0
-  const socialSecurity  = belowThreshold ? 0 : earningsForSS * SS_RATE;
-  const medicare        = belowThreshold ? 0 : netEarnings * MEDICARE_RATE;
-  const totalSETax      = socialSecurity + medicare;
-  const deductibleHalf  = totalSETax / 2;
-  const quarterlyAmt    = totalSETax / 4;
-  const monthlyAmt      = totalSETax / 12;
-  const netAfterSETax   = netIncome - totalSETax;
-  const effectiveRate   = grossIncome > 0 ? (totalSETax / grossIncome) * 100 : 0;
+    const netIncome          = Math.max(0, grossNum - expNum);
+    const netEarnings        = netIncome * SE_ADJUSTMENT;
+    const remainingSS        = Math.max(0, config.ssWageBase - w2Num);
+    const earningsForSS      = Math.min(netEarnings, remainingSS);
+    const expensesOverIncome = expNum > grossNum;
+    const belowThreshold     = netEarnings > 0 && netEarnings < SE_TAX_THRESHOLD;
+    const mayTriggerAddMedicare = netEarnings > 200000;
 
-  // Additional Medicare Tax: warn but don't calculate (depends on filing status)
-  const mayTriggerAddMedicare = netEarnings > 200000;
+    const socialSecurity = belowThreshold ? 0 : earningsForSS * SS_RATE;
+    const medicare       = belowThreshold ? 0 : netEarnings * MEDICARE_RATE;
+    const totalSETax     = socialSecurity + medicare;
+
+    return {
+      grossNum, expNum, w2Num,
+      netIncome, netEarnings, remainingSS, earningsForSS,
+      expensesOverIncome, belowThreshold, mayTriggerAddMedicare,
+      socialSecurity, medicare, totalSETax,
+      deductibleHalf: totalSETax / 2,
+      quarterlyAmt:   totalSETax / 4,
+      monthlyAmt:     totalSETax / 12,
+      netAfterSETax:  netIncome - totalSETax,
+      effectiveRate:  grossNum > 0 ? (totalSETax / grossNum) * 100 : 0,
+    };
+  }, [grossIncome, expenses, w2Wages, taxYear, config.ssWageBase]);
 
   // ── Formatters ─────────────────────────────────────────────────────────
   const $n  = n => '$' + Math.round(n).toLocaleString('en-US');
@@ -81,18 +90,18 @@ export default function SETaxEstimator() {
   let insightClass = 'insight info';
   let insightText  = '';
 
-  if (expensesOverIncome) {
+  if (calc.expensesOverIncome) {
     insightClass = 'insight warn';
     insightText  = 'Your expenses are higher than your income, so net self-employment income is $0. No SE tax is owed on a net loss. Double-check your numbers.';
-  } else if (belowThreshold) {
+  } else if (calc.belowThreshold) {
     insightClass = 'insight info';
     insightText  = `Self-employment tax generally applies when net earnings from self-employment are $400 or more. Your net earnings are below that threshold, so no SE tax is estimated here.`;
-  } else if (mayTriggerAddMedicare) {
+  } else if (calc.mayTriggerAddMedicare) {
     insightClass = 'insight warn';
     insightText  = `Your net earnings may trigger the Additional Medicare Tax (0.9%) depending on your filing status, W-2 wages, and total income. This calculator does not include that amount — a tax professional can help you estimate it.`;
-  } else if (w2Num > 0 && earningsForSS < netEarnings) {
+  } else if (calc.w2Num > 0 && calc.earningsForSS < calc.netEarnings) {
     insightClass = 'insight info';
-    insightText  = `Because you entered ${$n(w2Num)} in W-2 wages from your regular job, the available Social Security wage base for SE tax is reduced to ${$n(remainingSS)}. Your Social Security portion is calculated on ${$n(earningsForSS)}, not the full net earnings amount.`;
+    insightText  = `Because you entered ${$n(calc.w2Num)} in W-2 wages from your regular job, the available Social Security wage base for SE tax is reduced to ${$n(calc.remainingSS)}. Your Social Security portion is calculated on ${$n(calc.earningsForSS)}, not the full net earnings amount.`;
   } else {
     insightClass = 'insight info';
     insightText  = `This is SE tax only — Social Security and Medicare. You may also owe federal income tax and possibly state income tax. Depending on your income, deductions, filing status, and state, your total set-aside will likely need to be higher than this estimate.`;
@@ -106,10 +115,17 @@ export default function SETaxEstimator() {
     setActivePreset(key);
   }
 
+  function handleInputChange(setter) {
+    return (e) => {
+      setter(e.target.value);
+      setActivePreset(null);
+    };
+  }
+
   function clearPreset() { setActivePreset(null); }
 
   function copyResult() {
-    const text = `SE Tax (${taxYear}): ${$n(totalSETax)}/yr · Quarterly: ${$n(quarterlyAmt)} · Monthly: ${$n(monthlyAmt)}`;
+    const text = `SE Tax (${taxYear}): ${$n(calc.totalSETax)}/yr · Quarterly: ${$n(calc.quarterlyAmt)} · Monthly: ${$n(calc.monthlyAmt)}`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -176,20 +192,20 @@ export default function SETaxEstimator() {
           <div className="card-title">Your self-employment income</div>
 
           <div className="field">
-            <div className="field-label">
+            <label htmlFor="gross-income" className="field-label">
               <span className="field-name">Gross self-employment income</span>
               <span className="field-hint">before expenses</span>
-            </div>
+            </label>
             <div className="dollar-input">
               <span className="dollar-sign">$</span>
               <input
-                type="number"
+                id="gross-income"
+                type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 value={grossIncome}
-                min={0}
-                step={5000}
                 aria-label="Gross self-employment income before expenses"
-                onChange={(e) => { setGrossIncome(parseFloat(e.target.value) || 0); clearPreset(); }}
+                onChange={handleInputChange(setGrossIncome)}
               />
             </div>
             <div className="field-helper">
@@ -198,20 +214,20 @@ export default function SETaxEstimator() {
           </div>
 
           <div className="field">
-            <div className="field-label">
+            <label htmlFor="expenses" className="field-label">
               <span className="field-name">Business expenses</span>
               <span className="field-hint">deductible costs</span>
-            </div>
+            </label>
             <div className="dollar-input">
               <span className="dollar-sign">$</span>
               <input
-                type="number"
+                id="expenses"
+                type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 value={expenses}
-                min={0}
-                step={500}
                 aria-label="Deductible business expenses"
-                onChange={(e) => { setExpenses(parseFloat(e.target.value) || 0); clearPreset(); }}
+                onChange={handleInputChange(setExpenses)}
               />
             </div>
             <div className="field-helper">
@@ -220,14 +236,14 @@ export default function SETaxEstimator() {
           </div>
 
           {/* Net income strip */}
-          {!expensesOverIncome && netIncome > 0 && (
+          {!calc.expensesOverIncome && calc.netIncome > 0 && (
             <div className="net-income-strip">
               <span className="net-income-label">Net self-employment income</span>
-              <span className="net-income-value">{$n(netIncome)}</span>
+              <span className="net-income-value">{$n(calc.netIncome)}</span>
             </div>
           )}
 
-          {expensesOverIncome && (
+          {calc.expensesOverIncome && (
             <div className="net-income-strip net-income-strip--warn">
               <span className="net-income-label">Expenses exceed income — net income is $0</span>
               <span className="net-income-value" style={{ color: 'var(--amber)' }}>$0</span>
@@ -244,8 +260,8 @@ export default function SETaxEstimator() {
           >
             <div className="accordion-trigger-left">
               <span className="accordion-title">Also have a regular job? Add W-2 wages to improve accuracy</span>
-              <span className={`accordion-badge${w2Num > 0 ? ' filled' : ''}`}>
-                {w2Num > 0 ? 'added ✓' : 'optional'}
+              <span className={`accordion-badge${calc.w2Num > 0 ? ' filled' : ''}`}>
+                {calc.w2Num > 0 ? 'added ✓' : 'optional'}
               </span>
             </div>
             <span className="accordion-icon">▾</span>
@@ -259,12 +275,12 @@ export default function SETaxEstimator() {
               <div className="dollar-input">
                 <span className="dollar-sign">$</span>
                 <input
-                  type="number"
+                  id="w2-wages"
+                  type="text"
                   inputMode="numeric"
+                  pattern="[0-9]*"
                   value={w2Wages}
                   placeholder="0"
-                  min={0}
-                  step={5000}
                   aria-label="W-2 wages from regular employment already subject to Social Security tax"
                   onChange={(e) => setW2Wages(e.target.value)}
                 />
@@ -286,14 +302,14 @@ export default function SETaxEstimator() {
             <div className="result-eyebrow">Estimated self-employment tax — {taxYear}</div>
             <div className="result-main">
               <span className="currency">$</span>
-              <span>{Math.round(totalSETax).toLocaleString()}</span>
+              <span>{Math.round(calc.totalSETax).toLocaleString()}</span>
             </div>
             <div className="result-caption">
-              {netIncome > 0
-                ? `${pct(effectiveRate)} of gross income · based on ${$n(netIncome)} net income`
+              {calc.netIncome > 0
+                ? `${pct(calc.effectiveRate)} of gross income · based on ${$n(calc.netIncome)} net income`
                 : 'Enter your income above to see your estimate'}
             </div>
-            {netIncome > 0 && (
+            {calc.netIncome > 0 && (
               <div className="sanity-anchor">
                 SE tax only — does not include federal or state income tax
               </div>
@@ -304,29 +320,29 @@ export default function SETaxEstimator() {
           <div className="tier-grid">
             <div className="tier-cell recommended">
               <div className="tier-label">★ Quarterly set-aside</div>
-              <div className="tier-rate">{$n(quarterlyAmt)}</div>
+              <div className="tier-rate">{$n(calc.quarterlyAmt)}</div>
               <div className="tier-desc">Set aside every 3 months</div>
             </div>
             <div className="tier-cell">
               <div className="tier-label">Monthly set-aside</div>
-              <div className="tier-rate">{$n(monthlyAmt)}</div>
+              <div className="tier-rate">{$n(calc.monthlyAmt)}</div>
               <div className="tier-desc">If you budget monthly</div>
             </div>
             <div className="tier-cell">
               <div className="tier-label">Deductible amount</div>
-              <div className="tier-rate">{$n(deductibleHalf)}</div>
+              <div className="tier-rate">{$n(calc.deductibleHalf)}</div>
               <div className="tier-desc">Reduces taxable income</div>
             </div>
           </div>
 
           {/* Net income remaining */}
-          {netIncome > 0 && !belowThreshold && (
+          {calc.netIncome > 0 && !calc.belowThreshold && (
             <div className="remaining-strip">
               <div className="remaining-left">
                 <div className="remaining-label">Net income after estimated SE tax</div>
                 <div className="remaining-sub">Before federal income tax, state tax, living expenses, and savings</div>
               </div>
-              <div className="remaining-value">{$n(netAfterSETax)}</div>
+              <div className="remaining-value">{$n(calc.netAfterSETax)}</div>
             </div>
           )}
 
@@ -341,7 +357,7 @@ export default function SETaxEstimator() {
                     {d.due}
                     {d.nextYear && <div className="qdate-next-year">paid in following year</div>}
                   </div>
-                  <div className="qdate-amount">{$n(quarterlyAmt)}</div>
+                  <div className="qdate-amount">{$n(calc.quarterlyAmt)}</div>
                 </div>
               ))}
             </div>
@@ -372,41 +388,41 @@ export default function SETaxEstimator() {
               <div className="breakdown-title">Standard Schedule SE calculation</div>
               <div className="bd-row">
                 <span className="bd-name">Gross self-employment income</span>
-                <span className="bd-val">{$n(grossIncome)}</span>
+                <span className="bd-val">{$n(calc.grossNum)}</span>
               </div>
               <div className="bd-row">
                 <span className="bd-name">Business expenses</span>
-                <span className="bd-val">− {$n(expenses)}</span>
+                <span className="bd-val">− {$n(calc.expNum)}</span>
               </div>
               <div className="bd-row">
                 <span className="bd-name">Net self-employment income</span>
-                <span className="bd-val">{$n(netIncome)}</span>
+                <span className="bd-val">{$n(calc.netIncome)}</span>
               </div>
               <div className="bd-row">
                 <span className="bd-name">× {(SE_ADJUSTMENT * 100).toFixed(2)}% Schedule SE adjustment</span>
-                <span className="bd-val">{$n(netEarnings)}</span>
+                <span className="bd-val">{$n(calc.netEarnings)}</span>
               </div>
-              {w2Num > 0 && (
+              {calc.w2Num > 0 && (
                 <div className="bd-row">
                   <span className="bd-name">Social Security base remaining after W-2 wages</span>
-                  <span className="bd-val">{$n(remainingSS)}</span>
+                  <span className="bd-val">{$n(calc.remainingSS)}</span>
                 </div>
               )}
               <div className="bd-row">
-                <span className="bd-name">Social Security tax (12.4% on {$n(earningsForSS)})</span>
-                <span className="bd-val">{$n(socialSecurity)}</span>
+                <span className="bd-name">Social Security tax (12.4% on {$n(calc.earningsForSS)})</span>
+                <span className="bd-val">{$n(calc.socialSecurity)}</span>
               </div>
               <div className="bd-row">
-                <span className="bd-name">Medicare tax (2.9% on {$n(netEarnings)})</span>
-                <span className="bd-val">{$n(medicare)}</span>
+                <span className="bd-name">Medicare tax (2.9% on {$n(calc.netEarnings)})</span>
+                <span className="bd-val">{$n(calc.medicare)}</span>
               </div>
               <div className="bd-total-row">
                 <span className="bd-total-name">Total self-employment tax</span>
-                <span className="bd-total-val">{$n(totalSETax)}</span>
+                <span className="bd-total-val">{$n(calc.totalSETax)}</span>
               </div>
               <div className="bd-row" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
                 <span className="bd-name">Deductible amount (50% of SE tax)</span>
-                <span className="bd-val" style={{ color: 'var(--green)' }}>− {$n(deductibleHalf)}</span>
+                <span className="bd-val" style={{ color: 'var(--green)' }}>− {$n(calc.deductibleHalf)}</span>
               </div>
               <div className="adv-note" style={{ marginTop: '12px' }}>
                 The deductible amount reduces your adjusted gross income on your federal return. It does not reduce your SE tax bill dollar-for-dollar.
@@ -500,11 +516,11 @@ export default function SETaxEstimator() {
       </div>
 
       {/* Sticky bar */}
-      {grossIncome > 0 && (
+      {calc.grossNum > 0 && (
         <div className="sticky-bar show">
           <div>
             <div className="sticky-label">Self-employment tax — {taxYear}</div>
-            <div className="sticky-rate">{$n(totalSETax)}/yr</div>
+            <div className="sticky-rate">{$n(calc.totalSETax)}/yr</div>
           </div>
           <button
             className="sticky-scroll-btn"
