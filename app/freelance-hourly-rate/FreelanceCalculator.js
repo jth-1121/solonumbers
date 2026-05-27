@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 const PRESETS = {
   sideHustle:    { income: 25000,  billable: 15, weeks: 44, expenses: '1000',  health: '',    retirement: 0,  buffer: 15 },
@@ -16,7 +17,7 @@ const PRESET_LABELS = {
   consultant:    'Senior consultant',
 };
 
-export default function Home() {
+export default function FreelanceCalculator() {
   const [income,       setIncome]       = useState(75000);
   const [billable,     setBillable]     = useState(25);
   const [weeks,        setWeeks]        = useState(48);
@@ -106,7 +107,7 @@ export default function Home() {
       <div className="page">
 
         <header className="header">
-          <div className="logo">Solo<em>Numbers</em></div>
+          <Link href="/" style={{ textDecoration: 'none' }}><div className="logo">Solo<em>Numbers</em></div></Link>
         </header>
 
         <div className="eyebrow">Free Calculator</div>
@@ -431,26 +432,26 @@ export default function Home() {
           <h2>Related tools</h2>
           <p className="related-bridge">Next: estimate your quarterly self-employment tax, or find out what you actually keep per project.</p>
           <div className="tools-grid">
-            <a className="tool-link" href="#">
+            <Link className="tool-link" href="/self-employment-tax">
               <div className="tool-link-tag">Calculator</div>
               <div className="tool-link-name">Self-Employment Tax Estimator</div>
               <div className="tool-link-desc">Estimate quarterly SE tax payments</div>
-            </a>
-            <a className="tool-link" href="#">
-              <div className="tool-link-tag">Calculator</div>
+            </Link>
+            <div className="tool-link tool-link--disabled" aria-disabled="true">
+              <div className="tool-link-tag">Coming soon</div>
               <div className="tool-link-name">Project Profit Margin</div>
               <div className="tool-link-desc">What you actually earn per project</div>
-            </a>
-            <a className="tool-link" href="#">
-              <div className="tool-link-tag">Calculator</div>
+            </div>
+            <div className="tool-link tool-link--disabled" aria-disabled="true">
+              <div className="tool-link-tag">Coming soon</div>
               <div className="tool-link-name">Invoice Late Fee Calculator</div>
               <div className="tool-link-desc">Interest on overdue invoices</div>
-            </a>
-            <a className="tool-link" href="#">
-              <div className="tool-link-tag">Calculator</div>
+            </div>
+            <div className="tool-link tool-link--disabled" aria-disabled="true">
+              <div className="tool-link-tag">Coming soon</div>
               <div className="tool-link-name">Stripe Fee Calculator</div>
               <div className="tool-link-desc">What Stripe takes per transaction</div>
-            </a>
+            </div>
           </div>
         </div>
 

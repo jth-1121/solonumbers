@@ -335,6 +335,16 @@ details.faq-item .faq-body { padding: 12px 16px 14px; font-size: 14px; color: va
 .tool-link-tag  { font-size: 10px; font-weight: 700; color: var(--indigo); text-transform: uppercase; letter-spacing: 0.8px; }
 .tool-link-name { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 3px; }
 .tool-link-desc { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.tool-link--disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.tool-link--disabled:hover {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
 
 /* ── Disclaimer ── */
 .disclaimer { font-size: 11px; color: var(--text-3); line-height: 1.6; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }

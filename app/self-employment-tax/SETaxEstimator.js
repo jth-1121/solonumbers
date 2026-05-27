@@ -80,7 +80,7 @@ export default function SETaxEstimator() {
       netAfterSETax:  netIncome - totalSETax,
       effectiveRate:  grossNum > 0 ? (totalSETax / grossNum) * 100 : 0,
     };
-  }, [grossIncome, expenses, w2Wages, taxYear, config.ssWageBase]);
+  }, [grossIncome, expenses, w2Wages, config.ssWageBase]);
 
   // ── Formatters ─────────────────────────────────────────────────────────
   const $n  = n => '$' + Math.round(n).toLocaleString('en-US');
@@ -492,16 +492,16 @@ export default function SETaxEstimator() {
               <div className="tool-link-name">How to Calculate SE Tax Into Your Rate</div>
               <div className="tool-link-desc">Why your rate needs to account for SE tax</div>
             </Link>
-            <a className="tool-link" href="#">
-              <div className="tool-link-tag">Calculator</div>
+            <div className="tool-link tool-link--disabled" aria-disabled="true">
+              <div className="tool-link-tag">Coming soon</div>
               <div className="tool-link-name">Project Profit Margin</div>
               <div className="tool-link-desc">What you actually earn per project</div>
-            </a>
-            <a className="tool-link" href="#">
-              <div className="tool-link-tag">Calculator</div>
+            </div>
+            <div className="tool-link tool-link--disabled" aria-disabled="true">
+              <div className="tool-link-tag">Coming soon</div>
               <div className="tool-link-name">Invoice Late Fee Calculator</div>
               <div className="tool-link-desc">Interest on overdue invoices</div>
-            </a>
+            </div>
           </div>
         </div>
 
