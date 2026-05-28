@@ -13,4 +13,24 @@ export const metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "SoloNumbers — Free Financial Calculators for Fre
+    title: "SoloNumbers — Free Financial Calculators for Freelancers",
+    description:
+      "Simple, free calculators that help freelancers price their work, manage taxes, and understand what they actually earn.",
+    url: "https://www.solonumbers.com",
+    siteName: "SoloNumbers",
+    type: "website",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}

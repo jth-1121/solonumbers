@@ -468,4 +468,14 @@ export default function FreelanceCalculator() {
       {income > 0 && (
         <div className="sticky-bar show">
           <div>
-            <div className="sticky-label">Recommende
+            <div className="sticky-label">Recommended rate</div>
+            <div className="sticky-rate">{fmtHr(recRate)}</div>
+          </div>
+          <button className="sticky-scroll-btn" onClick={scrollToInputs}>
+            Edit inputs ↑
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
