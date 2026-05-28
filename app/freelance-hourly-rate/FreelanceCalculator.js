@@ -33,26 +33,40 @@ export default function FreelanceCalculator() {
   const [activePreset,   setActivePreset]   = useState(null);
 
   // ── Derived calculations ──────────────────────────────────────────────────
-  const expNum       = parseFloat(expenses) || 0;
-  const healthNum    = parseFloat(health)   || 0;
+  const toNumber = (value) => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    const cleaned = String(value ?? '').replace(/,/g, '').trim();
+    const parsed = parseFloat(cleaned);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const incomeNum    = toNumber(income);
+  const expNum       = toNumber(expenses);
+  const healthNum    = toNumber(health);
+  const billableNum  = toNumber(billable);
+  const weeksNum     = toNumber(weeks);
+  const retirementNum = toNumber(retirement);
+  const taxRateNum   = toNumber(taxRate);
+  const bufferNum    = toNumber(buffer);
+
   const healthAnnual = healthNum * 12;
-  const retireAnnual = income * (retirement / 100);
-  const seTax        = income * (taxRate / 100);
-  const totalNeeded  = income + seTax + expNum + healthAnnual + retireAnnual;
-  const hoursPerYear = billable * weeks;
+  const retireAnnual = incomeNum * (retirementNum / 100);
+  const seTax        = incomeNum * (taxRateNum / 100);
+  const totalNeeded  = incomeNum + seTax + expNum + healthAnnual + retireAnnual;
+  const hoursPerYear = billableNum * weeksNum;
   const baseRate     = hoursPerYear > 0 ? totalNeeded / hoursPerYear : 0;
-  const recRate      = baseRate * (1 + buffer / 100);
+  const recRate      = baseRate * (1 + bufferNum / 100);
   const stretchRate  = recRate * 1.20;
-  const weeklyRev    = Math.round(recRate * billable);
-  const naiveRate    = income > 0 ? Math.round(income / 2080) : 0;
+  const weeklyRev    = Math.round(recRate * billableNum);
+  const naiveRate    = incomeNum > 0 ? Math.round(incomeNum / 2080) : 0;
   const gap          = Math.round(recRate) - naiveRate;
 
   // ── Formatters ────────────────────────────────────────────────────────────
   const fmt   = (n) => '$' + Math.round(n).toLocaleString('en-US');
-  const fmtHr = (n) => '$' + Math.round(n) + '/hr';
+  const fmtHr = (n) => '$' + Math.round(n).toLocaleString('en-US') + '/hr';
 
   // ── Badge ─────────────────────────────────────────────────────────────────
-  const advCustomized = expNum > 0 || healthNum > 0 || retirement > 0 || buffer !== 20 || taxRate !== 14.1;
+  const advCustomized = expNum > 0 || healthNum > 0 || retirementNum > 0 || bufferNum !== 20 || taxRateNum !== 14.1;
 
   // ── Insight ───────────────────────────────────────────────────────────────
   let insightClass = 'insight info';
@@ -62,10 +76,10 @@ export default function FreelanceCalculator() {
     insightText  = `${billable} billable hours/week is ambitious. Most full-time freelancers achieve 20–25 once admin, marketing, and project gaps are accounted for. Try 25 hours for a more realistic estimate.`;
   } else if (gap > 15) {
     insightClass = 'insight info';
-    insightText  = `A basic earnings ÷ hours calculation would suggest ~${fmt(naiveRate)}/hr. Accounting for SE tax, costs, and your ${Math.round(buffer)}% buffer, you need ~${fmtHr(recRate)} — ${fmt(gap)} more per hour. That gap is why most freelancers undercharge.`;
+    insightText  = `A basic earnings ÷ hours calculation would suggest ~${fmt(naiveRate)}/hr. Accounting for SE tax, costs, and your ${Math.round(bufferNum)}% buffer, you need ~${fmtHr(recRate)} — ${fmt(gap)} more per hour. That gap is why most freelancers undercharge.`;
   } else {
     insightClass = 'insight good';
-    insightText  = `Your recommended rate of ${fmtHr(recRate)} covers your income goal, SE tax, costs, and a ${Math.round(buffer)}% buffer for sustainable freelance work.`;
+    insightText  = `Your recommended rate of ${fmtHr(recRate)} covers your income goal, SE tax, costs, and a ${Math.round(bufferNum)}% buffer for sustainable freelance work.`;
   }
 
   // ── Stepper helper ────────────────────────────────────────────────────────
@@ -78,7 +92,7 @@ export default function FreelanceCalculator() {
   // ── Apply preset ──────────────────────────────────────────────────────────
   function applyPreset(key) {
     const p = PRESETS[key];
-    setIncome(p.income);
+    setIncome(String(p.income));
     setBillable(p.billable);
     setWeeks(p.weeks);
     setExpenses(p.expenses);
@@ -294,7 +308,7 @@ export default function FreelanceCalculator() {
               <span className="per-hr">/hr</span>
             </div>
             <div className="result-caption">
-              Includes {Math.round(buffer)}% buffer · {billable} billable hrs/wk × {weeks} weeks
+              Includes {Math.round(bufferNum)}% buffer · {billable} billable hrs/wk × {weeks} weeks
             </div>
             {income > 0 && (
               <div className="sanity-anchor">
@@ -313,7 +327,7 @@ export default function FreelanceCalculator() {
             <div className="tier-cell recommended">
               <div className="tier-label">★ Recommended</div>
               <div className="tier-rate">{fmtHr(recRate)}</div>
-              <div className="tier-desc">+{Math.round(buffer)}% buffer applied</div>
+              <div className="tier-desc">+{Math.round(bufferNum)}% buffer applied</div>
             </div>
             <div className="tier-cell">
               <div className="tier-label">Stretch</div>
