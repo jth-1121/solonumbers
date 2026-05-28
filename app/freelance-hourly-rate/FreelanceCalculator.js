@@ -18,7 +18,7 @@ const PRESET_LABELS = {
 };
 
 export default function FreelanceCalculator() {
-  const [income,       setIncome]       = useState(75000);
+  const [income,       setIncome]       = useState('75000');
   const [billable,     setBillable]     = useState(25);
   const [weeks,        setWeeks]        = useState(48);
   const [expenses,     setExpenses]     = useState('');
@@ -142,12 +142,13 @@ export default function FreelanceCalculator() {
             <div className="dollar-input">
               <span className="dollar-sign">$</span>
               <input
-                type="number"
-                inputMode="numeric"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9,]*"
                 value={income}
                 min={0}
                 step={5000}
-                onChange={(e) => { setIncome(parseFloat(e.target.value) || 0); setActivePreset(null); }}
+                onChange={(e) => { setIncome(e.target.value); setActivePreset(null); }}
               />
             </div>
             <div className="field-helper">
@@ -467,14 +468,4 @@ export default function FreelanceCalculator() {
       {income > 0 && (
         <div className="sticky-bar show">
           <div>
-            <div className="sticky-label">Recommended rate</div>
-            <div className="sticky-rate">{fmtHr(recRate)}</div>
-          </div>
-          <button className="sticky-scroll-btn" onClick={scrollToInputs}>
-            Edit inputs ↑
-          </button>
-        </div>
-      )}
-    </>
-  );
-}
+            <div className="sticky-label">Recommende

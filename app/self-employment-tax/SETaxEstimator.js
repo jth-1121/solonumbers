@@ -529,10 +529,4 @@ export default function SETaxEstimator() {
             onClick={() => document.getElementById('inputs-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             aria-label="Scroll back to edit inputs"
           >
-            Edit inputs ↑
-          </button>
-        </div>
-      )}
-    </>
-  );
-}
+ 
